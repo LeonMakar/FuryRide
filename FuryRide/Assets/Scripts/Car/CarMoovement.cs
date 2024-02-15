@@ -1,3 +1,4 @@
+using Cinemachine;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,6 +16,7 @@ public class CarMoovement : MonoBehaviour
     public Vector3 CenterOfMass;
     private float _mooveInput;
     private float _steerInput;
+    private float _mouseInput;
 
     public enum WheelSide
     {

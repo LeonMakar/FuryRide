@@ -1,19 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
+using System.Linq;
 using UnityEngine;
 
 public class Turret : MonoBehaviour
 {
-    [SerializeField] Camera _mainCamera;
-    public Vector3 LookPosition;
+    [SerializeField] private GameObject _objectToRotate;
+    [SerializeField] private GameObject _cameraRotation;
+    [SerializeField] private TurretFindTarget _findTarget;
 
+    private GameObject _closestEnemy;
 
-    private void FixedUpdate()
+    private void LateUpdate()
     {
-        Vector3 centerScreen = new Vector3(Screen.width / 2, Screen.height / 2, 0);
-        Ray ray = _mainCamera.ScreenPointToRay(centerScreen);
+        TurretRotating();
 
-        if (Physics.Raycast(ray, out RaycastHit hit))
-            LookPosition = hit.point;
     }
+
+    private void TurretRotating()
+    {
+        _objectToRotate.transform.rotation = _cameraRotation.transform.rotation;
+        _closestEnemy = null;
+    }
+
 }
