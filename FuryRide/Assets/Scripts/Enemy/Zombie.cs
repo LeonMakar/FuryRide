@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 using Zenject;
 
 public abstract class Zombie : MonoBehaviour
@@ -14,6 +15,8 @@ public abstract class Zombie : MonoBehaviour
     [SerializeField] private int BaseMoneyToDrop;
     [SerializeField] private int MoneyRandomizingRange;
 
+    public float SpeedForPushAwayEnemy = 10;
+
     [field: SerializeField] public float RotationInterval { get; private set; }
 
     protected int HoldedMoney;
@@ -24,18 +27,19 @@ public abstract class Zombie : MonoBehaviour
     //----------Scins----------//
     [Space(10), Header("Scins and RididBodyes")]
 
-    [SerializeField] private Rigidbody _rigidBodyCenter;
+    [SerializeField] protected Rigidbody RigidBodyCenter;
     [SerializeField] private List<GameObject> _skins;
-    [SerializeField] private List<Rigidbody> _bodies;
+    [SerializeField] protected List<Rigidbody> Bodies;
     private int _scinNumber;
 
     //----------Services----------//
     [Space(10), Header("Services")]
-    [SerializeField] private Animator _animator;
+    [SerializeField] protected Animator Animator;
     [SerializeField] protected CharacterController CharacterController;
     [SerializeField] private TranslationZombieName ZombieName;
-
-
+    [SerializeField] protected NavMeshAgent NavMeshAgent;
+    protected CarMoovement Player;
+    private EventBus _eventBus;
     protected GameObject ActiveScin;
 
     private UIMoneyShower _moneyShower;
@@ -47,28 +51,83 @@ public abstract class Zombie : MonoBehaviour
     private int _isDied;
     private int _isStandUp;
     private bool _isCrowling;
+    private int _isCanAttack;
+    private int _isEnemyFarAway;
     public bool CanDisableHealthBar;
 
     #region Initialization
     [Inject]
-    public void Construct(HealthBar healthBar, UIMoneyShower moneyShower)
+    public void Construct(HealthBar healthBar, UIMoneyShower moneyShower, CarMoovement player, EventBus eventBus)
     {
         _healthBar = healthBar;
         _moneyShower = moneyShower;
+        Player = player;
+        _eventBus = eventBus;
     }
     private void Awake()
     {
         _isHited = Animator.StringToHash("Hit");
         _isDied = Animator.StringToHash("isDead");
         _isStandUp = Animator.StringToHash("StandUp");
+        _isCanAttack = Animator.StringToHash("CanAttack");
+        _isEnemyFarAway = Animator.StringToHash("EnemyIsFarAway");
+
         CalculateMoneyHolding();
+        _eventBus.Subscrube<PlayerLocationSignal>(SetNewMooveDirection);
     }
     #endregion
+
+    private void OnTriggerEnter(Collider collision)
+    {
+        if (collision.transform.tag == "Car")
+        {
+            var carSpeed = Player.CarRigidbody.velocity.magnitude;
+            if (carSpeed >= SpeedForPushAwayEnemy)
+            {
+                NavMeshAgent.enabled = false;
+                Animator.enabled = false;
+                RigidBodyCenter.isKinematic = false;
+                Player.Break();
+                foreach (var body in Bodies)
+                {
+                    body.isKinematic = false;
+                }
+
+                RigidBodyCenter.AddForce(Vector3.up * 800, ForceMode.Impulse);
+
+                StartCoroutine(Weiting());
+            }
+        }
+
+    }
+
+    private IEnumerator Weiting()
+    {
+        yield return new WaitForSeconds(4);
+        var position = RigidBodyCenter.transform.localToWorldMatrix;
+        transform.position = position.GetPosition();
+        Animator.enabled = true;
+
+        Animator.SetTrigger("StandUp");
+        NavMeshAgent.enabled = true;
+        yield return new WaitForSeconds(2);
+        RigidBodyCenter.isKinematic = true;
+        foreach (var body in Bodies)
+        {
+            body.isKinematic = true;
+        }
+    }
+
+    private void SetNewMooveDirection(PlayerLocationSignal signal)
+    {
+        if (gameObject.activeSelf)
+            NavMeshAgent.SetDestination(signal.PlayerPosition);
+    }
 
     #region Ragdoll
     public void AddForceToBody(Vector3 forceDirection)
     {
-        _rigidBodyCenter.AddForce(forceDirection, ForceMode.Impulse);
+        RigidBodyCenter.AddForce(forceDirection, ForceMode.Impulse);
     }
 
     /// <summary>
@@ -79,8 +138,8 @@ public abstract class Zombie : MonoBehaviour
     public void DiactivatingRagdoll(bool boolian)
     {
         _isCrowling = boolian;
-        _animator.enabled = boolian;
-        foreach (var rigidbody in _bodies)
+        Animator.enabled = boolian;
+        foreach (var rigidbody in Bodies)
         {
             rigidbody.isKinematic = boolian;
         }
@@ -90,13 +149,13 @@ public abstract class Zombie : MonoBehaviour
     private IEnumerator StandUp()
     {
         yield return new WaitForSeconds(5);
-        _animator.enabled = true;
-        foreach (var rigidbody in _bodies)
+        Animator.enabled = true;
+        foreach (var rigidbody in Bodies)
         {
             rigidbody.isKinematic = true;
         }
         if (Health > 0)
-            _animator.SetTrigger(_isStandUp);
+            Animator.SetTrigger(_isStandUp);
         else
         {
             Health = 0;
@@ -114,8 +173,6 @@ public abstract class Zombie : MonoBehaviour
         RandomizeZombieHealth();
         CalculateMoneyHolding();
         IsStartDying = false;
-        gameObject.layer = 6;
-
     }
     private void ChangeZombieScin()
     {
@@ -162,25 +219,19 @@ public abstract class Zombie : MonoBehaviour
         }
 
         _healthBar?.ChangeSliderValues(_maxHealthAfterRandomizing, 0, Health, damageValue);
-        _animator.SetTrigger(_isHited);
+        Animator.SetTrigger(_isHited);
     }
     private void Deading()
     {
         Health = 0;
         gameObject.layer = 1;
         if (!_isCrowling)
-            _animator.SetTrigger(_isDied);
+            Animator.SetTrigger(_isDied);
         else
             DethActions();
 
         _moneyShower.ChangeMoneyValue(HoldedMoney);
         _isCrowling = false;
         GameConstans.DiffcultyValue++;
-    }
-
-
-    private void Update()
-    {
-        CharacterController.Move(Vector3.back * Speed * Time.deltaTime);
     }
 }

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Zenject;
 
@@ -16,6 +14,7 @@ public class EnemyFactory : IFactory
     public EnemyFactory(DiContainer diContainer)
     {
         _diContainer = diContainer;
+        Load();
     }
 
     public void Load()

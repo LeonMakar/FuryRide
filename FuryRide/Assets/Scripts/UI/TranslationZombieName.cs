@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using YG;
 
-public class TranslationZombieName
+public class TranslationZombieName : MonoBehaviour
 {
 
     [SerializeField] private string _ruName;

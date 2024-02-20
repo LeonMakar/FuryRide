@@ -56,9 +56,9 @@ public class EnemySpawner : Spawner
 
     private void InitializeEnemy(Zombie enemy)
     {
-        float x = RandomizeXPosition();
+        Transform spawnPosition = RandomizeSpawnPosition();
         enemy.gameObject.SetActive(false);
-        enemy.transform.position = new Vector3(x, transform.position.y, transform.position.z);
+        enemy.transform.position = spawnPosition.position;
         enemy.transform.rotation = Quaternion.LookRotation(Vector3.back);
         enemy.gameObject.SetActive(true);
         enemy.DoActionsAfterSpawning();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Zenject;
 
 public class Turret : MonoBehaviour
 {
@@ -14,8 +15,15 @@ public class Turret : MonoBehaviour
     [SerializeField] private float _fireRate;
     private bool _canFire = true;
     private TrailPool _trailPool;
+    private CharacterActions _characterAction;
+    private Zombie _zombie;
 
-    
+    [Inject]
+    public void Construct(CharacterActions characterAction)
+    {
+        _characterAction = characterAction;
+    }
+
     private void LateUpdate()
     {
         TurretRotating();
@@ -41,10 +49,27 @@ public class Turret : MonoBehaviour
         Ray ray = new Ray(_rawStartPosition.transform.position, _rawStartPosition.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, Int32.MaxValue))
         {
-            if (hit.collider.transform.gameObject.layer == 0 && _canFire)
+            if (hit.collider.transform.gameObject.layer == 8 && _canFire)
             {
-                _canFire = false;
                 StartCoroutine(WaitFireRate(hit.point));
+                _canFire = false;
+                if (_zombie == null)
+                {
+                    hit.transform.TryGetComponent(out Zombie zombie);
+                    _zombie = zombie;
+                    _zombie.OnUnderAim();
+                }
+                else if (_zombie.gameObject != hit.transform.gameObject)
+                {
+                    hit.transform.TryGetComponent(out Zombie zombie);
+                    _zombie = zombie;
+                    _zombie.OnUnderAim();
+                }
+                else
+                {
+                    _zombie.OnUnderAim();
+                }
+
             }
             _lineRenderer.SetPosition(0, _rawStartPosition.transform.position);
             _lineRenderer.SetPosition(1, hit.point);

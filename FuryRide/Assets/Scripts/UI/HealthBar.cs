@@ -7,11 +7,10 @@ using UnityEngine.UI;
 public class HealthBar : MonoBehaviour
 {
     [SerializeField] private Slider _slider;
-    [SerializeField] private TextMeshProUGUI _enemyName;
     [SerializeField] private TextMeshProUGUI _damageText;
     [SerializeField] private TextMeshProUGUI _healthText;
 
-    [SerializeField] private RectTransform _rectTransform;
+    [SerializeField] private TextMeshProUGUI _enemyName;
     bool _coroutineIsStarted = false;
     private bool _isOnAim;
     private bool _isGameObjectActive;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public abstract class Spawner : MonoBehaviour
 {
-    [SerializeField] protected Vector2 SpawnBordersPosition;
+    [SerializeField] protected List<Transform> SpawnPositions;
     protected EnemySpawnChanceData EnemySpawnData;
     protected BonusSpawnChanceData BonusSpawnData;
 
@@ -24,9 +24,9 @@ public abstract class Spawner : MonoBehaviour
 
     protected abstract IEnumerator Spawning();
 
-    protected float RandomizeXPosition()
+    protected Transform RandomizeSpawnPosition()
     {
-        float x = UnityEngine.Random.Range(SpawnBordersPosition.x, SpawnBordersPosition.y);
-        return x;
+        var x = UnityEngine.Random.Range(0, SpawnPositions.Count);
+        return SpawnPositions[x];
     }
 }
